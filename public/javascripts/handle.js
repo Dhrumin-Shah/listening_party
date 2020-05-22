@@ -10,10 +10,10 @@ jr.addEventListener('click', e => {
     let roomId = document.getElementById('roomId').value;
     socket.emit('check', roomId);
     socket.on('roomOpen', (roomId) => {
-        document.location.href = process.env.FRONTEND_URI + 'login/' + roomId || 'http://localhost:3000/login/' + roomId;
+        document.location.href = (process.env.FRONTEND_URI_LOGIN + roomId) || 'http://localhost:3000/login/' + roomId;
     });
     socket.on('roomMade', (msg) => {
         console.log(msg);
-        document.location.href = process.env.FRONTEND_URI + 'login/' + roomId + '/' + msg || 'http://localhost:3000/login/' + roomId + '/' + msg;
+        document.location.href = (process.env.FRONTEND_URI_LOGIN + roomId + '/' + msg) || 'http://localhost:3000/login/' + roomId + '/' + msg;
     });
 });

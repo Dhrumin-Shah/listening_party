@@ -68,7 +68,7 @@ app.get('/callback', function(req, res) {
     };
     request.post(authOptions, function(error, response, body) {
         var access_token = body.access_token;
-        let uri = process.env.FRONTEND_URI + 'room' || 'http://localhost:3000/room';
+        let uri = process.env.FRONTEND_URI_HANDLE || 'http://localhost:3000/room';
         if (newMember === null) {
             res.redirect(uri + '?access_token=' + access_token + '&room_id=' + roomId);
         } else {
