@@ -2,18 +2,39 @@
 
 <head>
   <title>Listening Party</title>
-  <link rel="stylesheet" href="/stylesheets/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <link rel="stylesheet" href="/stylesheets/materialize.css">
+  <link rel="shortcut icon" href="#" />
 </head>
 
 <body class="grey darken-4">
-  <div class="center-align valign-wrapper" style="height: 100%;">
+  <div class="valign-wrapper" style="height: 100%; width: 100%;">
     <div class="row">
-      <h1 class="white-text col s12">Listening Party</h1>
-      <a class="waves-effect waves-light btn-large green darken-3">Create Room</a>
+      <div class="row">
+        <div class="center-align">
+          <h1 class="white-text">Listening Party</h1>
+        </div>
+      </div>
+      <!--<div class="row">
+        <div class="center-align">
+          <a id="createRoom" class="waves-effect waves-light btn-large green darken-3">Create Room</a>
+        </div>
+      </div>-->
+      <div class="row">
+        <div class="center-align">
+          <a id="joinRoom" class="waves-effect waves-light btn-large green darken-3">Join Room</a>
+        </div>
+      </div>
+      <div class="row">
+        <div class="input-field col s6">
+          <input id="roomId" type="text" class="white-text">
+          <label for="roomId">Room ID</label>
+        </div>
+      </div>
     </div>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="./javascripts/handleBundle.js"></script>
 </body>
 
 </html>

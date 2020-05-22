@@ -7,8 +7,6 @@
 var app = require('../app');
 var debug = require('debug')('listening-party:server');
 var http = require('http');
-var request = require('request');
-var querystring = require('querystring');
 
 /**
  * Get port from environment and store in Express.
@@ -16,6 +14,7 @@ var querystring = require('querystring');
 
 var port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
+
 
 /**
  * Create HTTP server.
@@ -30,6 +29,10 @@ var server = http.createServer(app);
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
+
+var socketApi = require('../socketApi');
+var io = socketApi.io;
+io.attach(server);
 
 /**
  * Normalize a port into a number, string, or false.
@@ -90,42 +93,3 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
-
-let redirect_uri =
-    process.env.REDIRECT_URI ||
-    'http://localhost:3000/callback'
-
-app.get('/login', function(req, res) {
-  res.redirect('https://accounts.spotify.com/authorize?' +
-      querystring.stringify({
-        response_type: 'code',
-        client_id: process.env.SPOTIFY_CLIENT_ID,
-        scope: 'user-read-private user-read-email',
-        redirect_uri
-      }))
-})
-
-app.get('/callback', function(req, res) {
-  let code = req.query.code || null
-  let authOptions = {
-    url: 'https://accounts.spotify.com/api/token',
-    form: {
-      code: code,
-      redirect_uri,
-      grant_type: 'authorization_code'
-    },
-    headers: {
-      'Authorization': 'Basic ' + (new Buffer(
-          process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET
-      ).toString('base64'))
-    },
-    json: true
-  }
-  request.post(authOptions, function(error, response, body) {
-    var access_token = body.access_token
-    let uri = process.env.FRONTEND_URI || 'http://localhost:3000'
-    res.redirect(uri + '?access_token=' + access_token)
-  })
-})
-
-console.log(`Listening on port ${port}. Go /login to initiate authentication flow.`)
