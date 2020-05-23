@@ -32,7 +32,7 @@ server.on('listening', onListening);
 
 var socketApi = require('../socketApi');
 var io = socketApi.io;
-io.attach(server);
+io.attach(server, { pingTimeout: 60000 });
 
 /**
  * Normalize a port into a number, string, or false.
