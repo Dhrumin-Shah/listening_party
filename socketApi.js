@@ -8,7 +8,7 @@ io.on('connection', function(socket){
     socket.on('joinRoom', (roomId) => {
         console.log(roomId);
         socket.join(roomId);
-
+        socket.inRoom = roomId;
 
         socket.broadcast.to(roomId).emit('message', 'another mf joined');
     });
@@ -59,6 +59,7 @@ io.on('connection', function(socket){
     socket.on('disconnect', (reason) => {
         if (reason === 'transport close') {
             console.log('client disconnect');
+            rooms.delete(socket.inRoom);
         }
     });
 
