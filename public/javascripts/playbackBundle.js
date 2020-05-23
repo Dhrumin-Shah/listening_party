@@ -2694,6 +2694,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         }
     });
 
+    socket.on('editTable', (data) => {
+        editTable(data);
+    });
+
     async function getUserID() {
         return await s.getMe().then(
             function (data) {
@@ -2795,6 +2799,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             function (error) {
                 console.log(error);
             });
+        socket.emit('editTable', data);
+    }
+
+    function editTable(data) {
         let playlist = document.getElementById('playlistItems');
         let newTrack = playlist.insertRow();
         let songCell = newTrack.insertCell(0);

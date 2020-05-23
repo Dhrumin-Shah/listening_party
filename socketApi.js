@@ -54,6 +54,10 @@ io.on('connection', function(socket){
         io.to(data.roomID).emit('add', data);
     });
 
+    socket.on('editTable', (data) => {
+        io.to(data.roomID).emit('editTable', data);
+    });
+
     socket.on('disconnecting', (stuff) => {
         let socketRooms = Object.keys(socket.rooms);
         socket.on('disconnect', (reason) => {
