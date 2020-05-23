@@ -2558,7 +2558,6 @@ const input = document.querySelector('input');
 let parsed = queryString.parse(window.location.search);
 let accessToken = parsed.access_token;
 s.setAccessToken(accessToken);
-let songs = [];
 
 input.addEventListener('input', e => {
     let value = input.value;
@@ -2585,6 +2584,9 @@ input.addEventListener('input', e => {
                     link = found[i].uri;
                     document.getElementById('s' + i).innerHTML += song + ' - ' + artist + ' - ' + album;
                     document.getElementById('s' + i).setAttribute("data-uri", link);
+                    document.getElementById('s' + i).setAttribute("data-artist", artist);
+                    document.getElementById('s' + i).setAttribute("data-song", song);
+                    document.getElementById('s' + i).setAttribute("data-album", album);
                 }
                 document.getElementById('searchItems').style.display = 'block';
             },

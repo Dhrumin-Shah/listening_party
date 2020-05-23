@@ -5,16 +5,27 @@ var socketApi = {};
 let rooms = new Map();
 
 io.on('connection', function(socket){
-    socket.on('joinRoom', (roomId) => {
-        console.log(roomId);
-        socket.join(roomId);
-        socket.inRoom = roomId;
+    socket.on('check', (roomID) => {
+        if (!rooms.has(roomID)) {
+            console.log(roomID + ' created');
+            rooms.set(roomID, []);
+            io.to(socket.id).emit('roomOpen', roomID);
+        } else {
+            console.log(roomID + ' joined');
+            io.to(socket.id).emit('roomMade', roomID);
+        }
+    });
 
-        socket.broadcast.to(roomId).emit('message', 'another mf joined');
+    socket.on('joinRoom', (data) => {
+        console.log(data.roomID);
+        socket.join(data.roomID);
+        rooms.get(data.roomID).push(socket.id);
+
+        socket.broadcast.to(data.roomID).emit('message', 'another mf joined');
     });
 
     socket.on('addToSession', (data) => {
-        io.to(data).emit('joinUsRequest');
+        socket.broadcast.to(data.roomID).emit('joinUsRequest', data);
     });
 
     socket.on('joinUsRequest', (data) => {
@@ -22,20 +33,7 @@ io.on('connection', function(socket){
     });
 
     socket.on('joinUs', (data) => {
-        io.to(data.roomID).emit('joinUs', (data));
-    });
-
-    socket.on('check', (roomId) => {
-        if (!rooms.has(roomId)) {
-            console.log('undefined' + roomId);
-            rooms.set(roomId, [socket.id]);
-            io.to(socket.id).emit('roomOpen', roomId);
-        } else {
-            console.log('idk' + roomId);
-            rooms.get(roomId).push(socket.id);
-            console.log(rooms);
-            io.to(socket.id).emit('roomMade', 'newMember');
-        }
+        io.to(data.newSocket).emit('joinUs', (data));
     });
 
     socket.on('joined', (data) => {
@@ -53,14 +51,28 @@ io.on('connection', function(socket){
     });
 
     socket.on('add', (data) => {
-        io.to(data.roomID).emit('add', data.uri);
+        io.to(data.roomID).emit('add', data);
     });
 
-    socket.on('disconnect', (reason) => {
-        if (reason === 'transport close') {
-            console.log('client disconnect');
-            rooms.delete(socket.inRoom);
-        }
+    socket.on('disconnecting', (stuff) => {
+        let socketRooms = Object.keys(socket.rooms);
+        socket.on('disconnect', (reason) => {
+            if (reason === 'transport close') {
+                console.log(socket.id + ' disconnected');
+                socketRooms.forEach((roomID) => {
+                    if (rooms.has(roomID)) {
+                        let roomSockets = rooms.get(roomID);
+                        if (roomSockets[0] === socket.id) {
+                            io.to(roomID).emit('hostLeft');
+                            rooms.delete(roomID);
+                            /*for (let i = 1; i < roomSockets.length; i++) {
+                                io.to()
+                            }*/
+                        }
+                    }
+                });
+            }
+        });
     });
 
 });

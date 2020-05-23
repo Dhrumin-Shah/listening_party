@@ -2556,19 +2556,18 @@ let queryString = require('query-string');
 
 let parsed = queryString.parse(window.location.search);
 let accessToken = parsed.access_token;
-s.setAccessToken(accessToken);
 let roomID = parsed.room_id;
-let newMember = false;
-if (parsed.newMember !== 'undefined') {
-    newMember = true;
-}
 let device;
 let verified = false;
 let playlistID;
 let playlistURI;
-let synced = false;
 
-console.log(newMember);
+s.setAccessToken(accessToken);
+
+let host = (sessionStorage.host === 'true');
+console.log(host);
+
+const socket = io();
 
 window.onSpotifyWebPlaybackSDKReady = () => {
     const token = accessToken;
@@ -2602,6 +2601,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     player.addListener('ready', ({device_id}) => {
         console.log('Ready with Device ID', device_id);
         device = device_id;
+        socket.emit('joinRoom', {roomID: roomID, host: host});
         initialize();
     });
 
@@ -2612,7 +2612,87 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
     player.connect();
 
-    const socket = io();
+    socket.on('joinUsRequest', (data) => {
+        if (verified) {
+            s.pause({device_id: device});
+        }
+        if (host) {
+            getState().then(
+                (state) => {
+                    socket.emit('joinUs', {
+                        roomID: roomID,
+                        playlistID: playlistID,
+                        playlistURI: playlistURI,
+                        progress: state.progress_ms,
+                        track: state.item,
+                        state: state.state,
+                        newSocket: data.id
+                    });
+                },
+                (error) => {
+                    console.log(error);
+                }
+            );
+        }
+    });
+
+    socket.on('joinUs', (data) => {
+        s.followPlaylist(data.playlistID, {public: false}).then(
+            (res) => {
+                console.log('follow successful');
+                playlistID = data.playlistID;
+                playlistURI = data.playlistURI;
+                verified = true;
+                socket.emit('joined', data);
+            },
+            (error) => {
+                console.log(error);
+            }
+        );
+    });
+
+    socket.on('message', (msg) => {
+        console.log(msg);
+    });
+
+    socket.on('joined', (data) => {
+        if (data.state === false) {
+            s.setVolume(0, {device_id: device});
+            s.play({context_uri: playlistURI, device_id: device, offset: {'uri': data.track.uri}});
+            setTimeout(() => {
+                s.seek(data.progress, {device_id: device});
+                s.setVolume(100, {device_id: device});
+            }, 1500);
+        } else {
+            console.log('man joined');
+        }
+    });
+
+    socket.on('hostLeft', () => {
+        socket.disconnect();
+        s.pause();
+        player.disconnect();
+    });
+
+
+    socket.on('playPause', (data) => {
+        playToggle(data);
+        console.log(data);
+    });
+
+    socket.on('rewind', (e) => {
+        s.skipToPrevious();
+    });
+
+    socket.on('forward', (e) => {
+        s.skipToNext();
+    });
+
+    socket.on('add', (data) => {
+        if (host) {
+            addSong(data);
+        }
+    });
 
     async function getUserID() {
         return await s.getMe().then(
@@ -2637,7 +2717,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     }
 
     async function initialize() {
-        if (!newMember) {
+        if (host) {
             verified = true;
             makePlaylist().then(
                 (madePlaylist) => {
@@ -2650,87 +2730,18 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     console.log(error);
                 });
         } else {
-            socket.emit('addToSession', (roomID));
+            socket.emit('addToSession', {roomID: roomID, id: socket.id});
         }
     }
-
-    socket.emit('joinRoom', roomID);
-
-    socket.on('joinUsRequest', () => {
-        if (verified) {
-            s.pause({device_id: device});
-            getState().then(
-                (state) => {
-                    socket.emit('joinUs', {
-                        roomID: roomID,
-                        playlistID: playlistID,
-                        playlistURI: playlistURI,
-                        progress: state.progress_ms,
-                        track: state.item,
-                        state: state.state
-                    });
-                },
-                (error) => {
-                    console.log(error);
-                }
-            );
-        }
-    });
-
-    socket.on('joinUs', (data) => {
-        if (!verified) {
-            //put follow playlist code here
-            s.followPlaylist(data.playlistID, {public: false}).then(
-                (res) => {
-                    console.log('follow successful');
-                    playlistID = data.playlistID;
-                    playlistURI = data.playlistURI;
-                    verified = true;
-                    socket.emit('joined', data);
-                },
-                (error) => {
-                    console.log(error);
-                }
-            );
-        }
-    });
-
-    socket.on('message', (msg) => {
-        console.log(msg);
-    });
-
-    socket.on('joined', (data) => {
-        s.setVolume(0, {device_id: device});
-        s.play({context_uri: playlistURI, device_id: device, offset: {'uri': data.track.uri}});
-        setTimeout(() => {
-            s.seek(data.progress, {device_id: device});
-            s.setVolume(100, {device_id: device});
-        }, 1500);
-    });
-
-
-    socket.on('playPause', (data) => {
-        playToggle(data);
-        console.log(data);
-    });
-
-    socket.on('rewind', (e) => {
-        s.skipToPrevious();
-    });
-
-    socket.on('forward', (e) => {
-        s.skipToNext();
-    });
-
-    socket.on('add', (uri) => {
-        addSong(uri);
-    });
 
     for (let i = 0; i < 5; i++) {
         document.getElementById('s' + i).addEventListener('click', e => {
             let track = e.target;
             let uri = track.getAttribute('data-uri');
-            socket.emit('add', {roomID: roomID, uri: uri});
+            let artist = track.getAttribute('data-artist');
+            let song = track.getAttribute('data-song');
+            let album = track.getAttribute('data-album');
+            socket.emit('add', {roomID: roomID, uri: uri, song: song, artist: artist, album: album});
         });
     }
 
@@ -2776,16 +2787,22 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     }
 
 
-    function addSong(uri) {
-        if (!newMember) {
-            s.addTracksToPlaylist(playlistID, [uri]).then(
-                function (data) {
-                    console.log('added ' + data);
-                },
-                function (error) {
-                    console.log(error);
-                });
-        }
+    function addSong(data) {
+        s.addTracksToPlaylist(playlistID, [data.uri]).then(
+            function (data) {
+                console.log('added ' + data);
+            },
+            function (error) {
+                console.log(error);
+            });
+        let playlist = document.getElementById('playlistItems');
+        let newTrack = playlist.insertRow();
+        let songCell = newTrack.insertCell(0);
+        let artistCell = newTrack.insertCell(1);
+        let albumCell = newTrack.insertCell(2);
+        songCell.appendChild(document.createTextNode(data.song));
+        artistCell.appendChild(document.createTextNode(data.artist));
+        albumCell.appendChild(document.createTextNode(data.album));
     }
 
     function playToggle(data) {

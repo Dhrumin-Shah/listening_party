@@ -25,22 +25,9 @@ let redirect_uri =
     process.env.REDIRECT_URI ||
     'http://localhost:3000/callback';
 
-let roomId;
-let newMember;
-app.get('/login/:roomId', function(req, res) {
-    roomId = req.params.roomId;
-    res.redirect('https://accounts.spotify.com/authorize?' +
-        querystring.stringify({
-            response_type: 'code',
-            client_id: process.env.SPOTIFY_CLIENT_ID,
-            scope: 'user-read-private user-read-email streaming user-modify-playback-state user-read-playback-state user-read-currently-playing playlist-modify-private playlist-modify-public',
-            redirect_uri
-        }))
-});
-
-app.get('/login/:roomId/:newMember', function(req, res) {
-    roomId = req.params.roomId;
-    newMember = req.params.newMember;
+let roomID;
+app.get('/login/:roomID', function(req, res) {
+    roomID = req.params.roomID;
     res.redirect('https://accounts.spotify.com/authorize?' +
         querystring.stringify({
             response_type: 'code',
@@ -69,12 +56,8 @@ app.get('/callback', function(req, res) {
     request.post(authOptions, function(error, response, body) {
         var access_token = body.access_token;
         let uri = process.env.FRONTEND_URI_HANDLE || 'http://localhost:3000/room';
-        if (newMember === null) {
-            res.redirect(uri + '?access_token=' + access_token + '&room_id=' + roomId);
-        } else {
-            res.redirect(uri + '?access_token=' + access_token + '&room_id=' + roomId + '&newMember=' + newMember);
-        }
-    })
+        res.redirect(uri + '?access_token=' + access_token + '&room_id=' + roomID);
+    });
 });
 
 module.exports = app;
