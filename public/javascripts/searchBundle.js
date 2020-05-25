@@ -2559,46 +2559,53 @@ let parsed = queryString.parse(window.location.search);
 let accessToken = parsed.access_token;
 s.setAccessToken(accessToken);
 
+let timer = '';
+
 input.addEventListener('input', e => {
     let value = input.value;
 
     const trimmed = value.trim();
 
     if (trimmed) {
+        clearTimeout(timer);
         input.dataset.state = 'valid';
-        let search = s.searchTracks(trimmed, { limit: 5 });
-        search.then(
-            function (data) {
-                for (let i = 0; i < 5; i++) {
-                    document.getElementById('s' + i).innerHTML = '';
-                }
-                let artist;
-                let song;
-                let album;
-                let link;
-                let found = data.tracks.items;
-                for (let i = 0; i < found.length; i++) {
-                    artist = found[i].artists[0].name;
-                    song = found[i].name;
-                    album = found[i].album.name;
-                    link = found[i].uri;
-                    document.getElementById('s' + i).innerHTML += song + ' - ' + artist + ' - ' + album;
-                    document.getElementById('s' + i).setAttribute("data-uri", link);
-                    document.getElementById('s' + i).setAttribute("data-artist", artist);
-                    document.getElementById('s' + i).setAttribute("data-song", song);
-                    document.getElementById('s' + i).setAttribute("data-album", album);
-                }
-                document.getElementById('searchItems').style.display = 'block';
-            },
-            function (err) {
-                console.log(err);
-            }
-        );
+        timer = setTimeout( () => {
+            let search = s.searchTracks(trimmed, { limit: 5 });
+            search.then(
+                function (data) {
+                    let artist;
+                    let song;
+                    let album;
+                    let link;
+                    let albumImage;
+                    let found = data.tracks.items;
+                    for (let i = 0; i < found.length; i++) {
+                        artist = found[i].artists[0].name;
+                        song = found[i].name;
+                        album = found[i].album.name;
+                        albumImage = found[i].album.images[0].url;
+                        link = found[i].uri;
+                        let parent = document.getElementById('s' + i);
+                        let childNodes = parent.children;
+                        childNodes[0].setAttribute('src', albumImage);
+                        childNodes[1].innerHTML = song;
+                        childNodes[2].innerHTML = artist;
+                        childNodes[3].innerHTML = album;
+                        parent.setAttribute("data-uri", link);
+                        parent.setAttribute("data-artist", artist);
+                        parent.setAttribute("data-song", song);
+                        parent.setAttribute("data-album", album);
+                        parent.setAttribute("data-albumImage", albumImage);
+                    }
+                    document.getElementById('searchItems').style.display = 'block';
+                },
+                function (err) {
+                    console.log(err);
+                });
+        }, 1000);
     } else {
+        clearTimeout(timer);
         input.dataset.state = 'invalid';
-        for (let i = 0; i < 5; i++) {
-            document.getElementById('s' + i).innerHTML = '';
-        }
         document.getElementById('searchItems').style.display = 'none';
     }
 });

@@ -2,46 +2,102 @@
 
 <head>
     <title>Room</title>
-    <link rel="stylesheet" href="/stylesheets/materialize.css">
+    <link rel="stylesheet" href="./stylesheets/materialize.css">
+    <link rel="stylesheet" href="./stylesheets/roomStyle.css">
     <link rel="shortcut icon" href="#" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body class="grey darken-4">
-<div class="container">
-    <div class="row">
-        <form class="col s12" method="GET">
-            <div class="row">
-                <div class="input-field col s12">
-                    <input id="search" type="text" class="materialize-textarea white-text"/>
-                    <label for="search">Search</label>
-                </div>
-            </div>
-        </form>
-    </div>
-    <div class="collection" id="searchItems" style="display: none;">
-        <a class="collection-item white-text grey darken-4" href="#" id="s0"></a>
-        <a class="collection-item white-text grey darken-4" href="#" id="s1"></a>
-        <a class="collection-item white-text grey darken-4" href="#" id="s2"></a>
-        <a class="collection-item white-text grey darken-4" href="#" id="s3"></a>
-        <a class="collection-item white-text grey darken-4" href="#" id="s4"></a>
-    </div>
-    <a class="btn-floating btn-large waves-effect waves-light red" id="rewind"><i class="material-icons">fast_rewind</i></a>
-    <a class="btn-floating btn-large waves-effect waves-light red" id="toggle"><i class="material-icons">play_arrow</i></a>
-    <a class="btn-floating btn-large waves-effect waves-light red" id="forward"><i class="material-icons">fast_forward</i></a>
-    <table id="playlistItems" class="highlight responsive-table white-text">
-        <thead>
-        <tr>
-            <th>Song</th>
-            <th>Artist</th>
-            <th>Album</th>
-        </tr>
-        </thead>
-        <tbody>
 
-        </tbody>
-    </table>
+<header class="z-depth-4">
+    <div class="row">
+        <div class="input-field col s6">
+            <input id="search" type="text" class="materialize-textarea white-text" autocomplete="off"/>
+            <label for="search">Search</label>
+        </div>
+        <div class="col s3">
+
+        </div>
+        <div class="col s3 white-text right-align">
+            <span class="flow-text" id="roomID"></span>
+        </div>
+    </div>
+    <div class="row">
+        <ul class="collection col s6" id="searchItems">
+            <li class="collection-item avatar grey darken-2 white-text" id="s0">
+                <img class="circle">
+                <span class="title truncate"></span>
+                <span class="truncate"></span>
+                <span class="truncate"></span>
+                <a href="#" class="secondary-content"><i class="material-icons green-text">add</i></a>
+            </li>
+            <li class="collection-item avatar grey darken-2 white-text" id="s1">
+                <img class="circle">
+                <span class="title truncate"></span>
+                <span class="truncate"></span>
+                <span class="truncate"></span>
+                <a href="#" class="secondary-content"><i class="material-icons green-text">add</i></a>
+            </li>
+            <li class="collection-item avatar grey darken-2 white-text" id="s2">
+                <img class="circle">
+                <span class="title truncate"></span>
+                <span class="truncate"></span>
+                <span class="truncate"></span>
+                <a href="#" class="secondary-content"><i class="material-icons green-text">add</i></a>
+            </li>
+            <li class="collection-item avatar grey darken-2 white-text" id="s3">
+                <img class="circle">
+                <span class="title truncate"></span>
+                <span class="truncate"></span>
+                <span class="truncate"></span>
+                <a href="#" class="secondary-content"><i class="material-icons green-text">add</i></a>
+            </li>
+            <li class="collection-item avatar grey darken-2 white-text" id="s4">
+                <img class="circle">
+                <span class="title truncate"></span>
+                <span class="truncate"></span>
+                <span class="truncate"></span>
+                <a href="#" class="secondary-content"><i class="material-icons green-text">add</i></a>
+            </li>
+        </ul>
+    </div>
+</header>
+<main>
+    <div class="ui">
+        <div id="playlist" class="z-depth-0">
+            <table id="playlistItems" class="highlight white-text">
+                <thead>
+                <tr>
+                    <th>Song</th>
+                    <th>Artist</th>
+                    <th>Album</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        <div id="chatRoom" class="z-depth-4 black">
+            <div id="chatMessages" class="black">
+            </div>
+            <div id="chatInput" class="input-field black">
+                <textarea id="messageInput" class="materialize-textarea white-text"></textarea>
+                <label for="messageInput">Enter message</label>
+                <a href="#" id="messageSend"><i class="material-icons green-text">send</i></a>
+            </div>
+        </div>
+    </div>
+</main>
+<footer>
+<div class="row grey darken-4">
+    <div class="col s12 center-align black control-bar">
+        <a class="btn-floating btn-large waves-effect waves-dark green control-element" id="rewind"><i class="material-icons">fast_rewind</i></a>
+        <a class="btn-floating btn-large waves-effect waves-dark green control-element" id="toggle"><i class="material-icons">play_arrow</i></a>
+        <a class="btn-floating btn-large waves-effect waves-dark green control-element" id="forward"><i class="material-icons">fast_forward</i></a>
+    </div>
 </div>
+</footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 <script src="/socket.io/socket.io.js"></script>

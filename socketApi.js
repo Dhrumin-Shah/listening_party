@@ -11,7 +11,6 @@ io.on('connection', function(socket){
             rooms.set(roomID, []);
             io.to(socket.id).emit('roomOpen', roomID);
         } else {
-            console.log(roomID + ' joined');
             io.to(socket.id).emit('roomMade', roomID);
         }
     });
@@ -21,7 +20,7 @@ io.on('connection', function(socket){
         socket.join(data.roomID);
         rooms.get(data.roomID).push(socket.id);
 
-        socket.broadcast.to(data.roomID).emit('message', 'another mf joined');
+        socket.broadcast.to(data.roomID).emit('message', 'another person joined');
     });
 
     socket.on('addToSession', (data) => {
@@ -56,6 +55,15 @@ io.on('connection', function(socket){
 
     socket.on('editTable', (data) => {
         io.to(data.roomID).emit('editTable', data);
+    });
+
+    socket.on('changeSong', (data) => {
+        io.to(data.roomID).emit('changeSong', data.uri);
+    });
+
+    socket.on('newChat', (data) => {
+        console.log('new chat');
+        io.to(data.roomID).emit('newChat', data);
     });
 
     socket.on('disconnecting', (stuff) => {

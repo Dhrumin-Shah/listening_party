@@ -1,8 +1,28 @@
 body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  background-image: url("../images/undraw_compose_music_ovo2.svg");
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
-a {
-  color: #00B7FF;
+body {
+  opacity: 1;
+  transition: 2s opacity;
+}
+
+body.fade {
+  opacity: 0;
+  transition: none;
+}
+
+#mainBox {
+  background-color: rgba(33,33,33,0.4);
+}
+
+.input-field input[type=text]:focus + label {
+  color: #4caf50 !important;
+}
+
+.input-field input[type=text]:focus {
+  border-bottom: 1px solid #4caf50 !important;
+  box-shadow: 0 1px 0 0 #4caf50 !important;
 }

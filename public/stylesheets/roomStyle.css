@@ -1,0 +1,141 @@
+body {
+    max-height: 100vh;
+    margin: 0px;
+    padding: 0px;
+}
+header {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 80px;
+}
+
+main {
+    position: absolute;
+    height: calc(100vh - 180px);
+    width: 100%;
+    top: 80px;
+}
+
+footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 100px;
+}
+thead {
+    height: 3rem;
+}
+tbody {
+    display:block;
+    height: calc(100% - 3rem);
+    overflow:auto;
+}
+thead, tbody tr {
+    display: table;
+    width:100%;
+}
+
+table {
+    height: 100%;
+}
+
+.control-element {
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-top: 0.5rem;
+}
+
+.control-bar {
+    height: 100px;
+}
+
+#searchItems {
+    position: absolute;
+    top: 55px;
+    padding: 0;
+    z-index: 9999999;
+    display: none;
+}
+
+.collection-item span:hover {
+    cursor: pointer;
+}
+
+.input-field input[type=text]:focus + label {
+    color: #4caf50 !important;
+}
+
+.input-field input[type=text]:focus {
+    border-bottom: 1px solid #4caf50 !important;
+    box-shadow: 0 1px 0 0 #4caf50 !important;
+}
+
+.ui {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+}
+
+#playlist {
+    width: calc(100% - 25rem);
+    padding: 10px;
+}
+
+#chatRoom {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: scroll;
+}
+
+#chatInput {
+    height: 5rem;
+}
+
+.input-field {
+    margin-top: 1rem;
+    margin-bottom: 0 !important;
+}
+
+#messageInput {
+    height: 3rem !important;
+    overflow: scroll !important;
+    margin-top: 5px !important;
+    width: 23rem;
+}
+
+#messageInput:focus + label {
+    color: #4caf50 !important;
+}
+
+#messageInput:focus {
+    border-bottom: 1px solid #4caf50 !important;
+    box-shadow: 0 1px 0 0 #4caf50 !important;
+}
+
+#messageSend {
+    width: 1rem;
+}
+#chatMessages {
+    display: flex;
+    flex-direction: column-reverse;
+    height: calc(100% - 6rem);
+    width: 25rem;
+    overflow: auto;
+}
+
+.message {
+    flex: 1;
+    padding: 5px;
+    width: calc(25rem - 40px);
+    min-height: 1rem;
+    word-break: break-all;
+}
+
+.messageBox {
+    width: 25rem;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 10px;
+}

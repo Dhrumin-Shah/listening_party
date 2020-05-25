@@ -2567,6 +2567,8 @@ s.setAccessToken(accessToken);
 let host = (sessionStorage.host === 'true');
 console.log(host);
 
+document.getElementById('roomID').innerHTML = roomID;
+
 const socket = io();
 
 window.onSpotifyWebPlaybackSDKReady = () => {
@@ -2698,6 +2700,25 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         editTable(data);
     });
 
+    socket.on('changeSong', (uri) => {
+        console.log(uri);
+        s.play({context_uri: playlistURI, device_id: device, offset: {'uri': uri}});
+    });
+
+    socket.on('newChat', (data) => {
+        let messageBox = document.createElement('div');
+        messageBox.className += 'messageBox';
+        let message = document.createElement('div');
+        message.classList.add('message', 'grey', 'darken-4');
+        let messageContent = document.createElement('span');
+        messageContent.className += 'white-text';
+        messageContent.innerHTML = data.newChat;
+        message.appendChild(messageContent);
+        messageBox.appendChild(message);
+        chatMessages.insertBefore(messageBox, chatMessages.firstChild);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+
     async function getUserID() {
         return await s.getMe().then(
             function (data) {
@@ -2739,13 +2760,16 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     }
 
     for (let i = 0; i < 5; i++) {
-        document.getElementById('s' + i).addEventListener('click', e => {
-            let track = e.target;
+        let track = document.getElementById('s' + i);
+        track.addEventListener('click', e => {
             let uri = track.getAttribute('data-uri');
             let artist = track.getAttribute('data-artist');
             let song = track.getAttribute('data-song');
             let album = track.getAttribute('data-album');
-            socket.emit('add', {roomID: roomID, uri: uri, song: song, artist: artist, album: album});
+            let tag = e.target;
+            if (tag.tagName === 'I') {
+                socket.emit('add', {roomID: roomID, uri: uri, song: song, artist: artist, album: album});
+            }
         });
     }
 
@@ -2780,6 +2804,19 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             });
     });
 
+    document.getElementById('playlistItems').addEventListener('click', e => {
+        let element = e.target.parentNode;
+        console.log(element);
+        let uri = element.getAttribute('data-uri');
+        socket.emit('changeSong', {roomID: roomID, uri: uri});
+    });
+
+    let chatMessages = document.getElementById('chatMessages');
+    document.getElementById('messageSend').addEventListener('click', e => {
+        let newChat = document.getElementById('messageInput').value;
+        socket.emit('newChat', {newChat: newChat, roomID: roomID});
+    });
+
     async function getState() {
         return await s.getMyCurrentPlaybackState().then(
             function (data) {
@@ -2805,6 +2842,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     function editTable(data) {
         let playlist = document.getElementById('playlistItems');
         let newTrack = playlist.insertRow();
+        newTrack.setAttribute('data-uri', data.uri);
+        newTrack.setAttribute('href', '#');
         let songCell = newTrack.insertCell(0);
         let artistCell = newTrack.insertCell(1);
         let albumCell = newTrack.insertCell(2);
