@@ -179,7 +179,12 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
     async function makePlaylist() {
         let userID = await getUserID();
-        return await s.createPlaylist(userID, {name: 'lptest', public: false, collaborative: true}).then(
+        let dateObj = new Date();
+        let month = dateObj.getUTCMonth() + 1;
+        let day = dateObj.getUTCDate();
+        let year = dateObj.getUTCFullYear();
+        let stamp = month + '/' + day + '/' + year;
+        return await s.createPlaylist(userID, {name: 'Listening Party ' + stamp, public: false, collaborative: true}).then(
             function (data) {
                 console.log(data);
                 return data;
