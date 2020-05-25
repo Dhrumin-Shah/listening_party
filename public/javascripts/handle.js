@@ -8,7 +8,7 @@ sr.addEventListener('click', e => {
     socket.on('roomOpen', (madeRoom) => {
         sessionStorage.host = true;
         roomID = madeRoom;
-        document.location.href = ('http://localhost:3000/login/' + roomID);
+        document.location.href = ('https://listening-party-spotify.herokuapp.com/login/' + roomID);
         //'https://listening-party-spotify.herokuapp.com/login/' + roomID;
         //('http://localhost:3000/login/' + roomID);
     });
@@ -24,7 +24,7 @@ jr.addEventListener('click', e => {
     socket.emit('check', roomID);
     socket.on('roomMade', (roomID) => {
         sessionStorage.host = false;
-        document.location.href = ('http://localhost:3000/login/' + roomID);
+        document.location.href = ('https://listening-party-spotify.herokuapp.com/login/' + roomID);
         //'https://listening-party-spotify.herokuapp.com/login/' + roomID;
         //('http://localhost:3000/login/' + roomID);
     });

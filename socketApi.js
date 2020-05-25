@@ -18,7 +18,9 @@ io.on('connection', function(socket){
     socket.on('joinRoom', (data) => {
         console.log(data.roomID);
         socket.join(data.roomID);
-        rooms.get(data.roomID).push(socket.id);
+        if (rooms.has(roomID)) {
+            rooms.get(data.roomID).push(socket.id);
+        }
 
         socket.broadcast.to(data.roomID).emit('message', 'another person joined');
     });
