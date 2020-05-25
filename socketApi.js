@@ -18,7 +18,7 @@ io.on('connection', function(socket){
     socket.on('joinRoom', (data) => {
         console.log(data.roomID);
         socket.join(data.roomID);
-        if (rooms.has(roomID)) {
+        if (rooms.has(data.roomID)) {
             rooms.get(data.roomID).push(socket.id);
         }
 
