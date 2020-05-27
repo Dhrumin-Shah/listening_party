@@ -281,6 +281,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     }
                 });
                 document.getElementById('search').value = '';
+                document.getElementById('searchItems').style.display = 'none';
                 socket.emit('roomMessage', { roomID: roomID, song: song, user: user, type: 'addSong'});
             }
         });
