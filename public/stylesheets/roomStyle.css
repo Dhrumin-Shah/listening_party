@@ -23,19 +23,27 @@ footer {
     width: 100%;
     height: 100px;
 }
+
 thead {
     height: 3rem;
 }
 tbody {
     display:block;
     height: calc(100% - 3rem);
-    overflow:auto;
+    overflow: scroll;
 }
 thead, tbody tr {
     display: table;
     width:100%;
 }
 
+td {
+    width: calc((1/3)*100%);
+}
+
+th {
+    width: calc((1/3)*100%);
+}
 table {
     height: 100%;
 }
@@ -138,4 +146,8 @@ table {
     padding-left: 20px;
     padding-right: 20px;
     padding-bottom: 10px;
+}
+
+.toast {
+    background-color: #4caf50;
 }

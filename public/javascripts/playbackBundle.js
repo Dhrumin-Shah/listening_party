@@ -2559,15 +2559,21 @@ let accessToken = parsed.access_token;
 let roomID = parsed.room_id;
 let device;
 let verified = false;
-let playlistID;
-let playlistURI;
 
 s.setAccessToken(accessToken);
 
 let host = (sessionStorage.host === 'true');
 console.log(host);
 
-document.getElementById('roomID').innerHTML = roomID;
+let trackList = [];
+let user;
+
+document.getElementById('roomID').innerHTML = 'Room ID: ' + roomID;
+
+let elems = document.querySelectorAll('.modal');
+let instances = M.Modal.init(elems);
+
+let joiningModal = instances[0];
 
 const socket = io();
 
@@ -2597,14 +2603,31 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     // Playback status updates
     player.addListener('player_state_changed', state => {
         console.log(state);
+        if (
+            this.state
+            && state.track_window.previous_tracks.find(x => x.id === state.track_window.current_track.id)
+            && !this.state.paused
+            && state.paused
+        ) {
+            console.log('Track ended');
+
+        }
+        if (state.paused) {
+            document.getElementById('playButton').innerHTML = 'play_arrow';
+        } else if (!state.paused) {
+            document.getElementById('playButton').innerHTML = 'pause';
+        }
+        document.getElementById('currentlyPlaying').innerHTML = 'Now Playing: ' + state.track_window.current_track.name + ' by ' + state.track_window.current_track.artists[0].name;
     });
 
     // Ready
     player.addListener('ready', ({device_id}) => {
         console.log('Ready with Device ID', device_id);
         device = device_id;
-        socket.emit('joinRoom', {roomID: roomID, host: host});
-        initialize();
+        s.getMe().then((data) => {
+            user = data;
+            socket.emit('joinRoom', {roomID: roomID, host: host, user: user});
+        });
     });
 
     // Not Ready
@@ -2614,59 +2637,67 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
     player.connect();
 
+    socket.on('roomEntered', (data) => {
+        initialize();
+    });
+
     socket.on('joinUsRequest', (data) => {
+        joiningModal.open();
         if (verified) {
-            s.pause({device_id: device});
-        }
-        if (host) {
-            getState().then(
-                (state) => {
-                    socket.emit('joinUs', {
-                        roomID: roomID,
-                        playlistID: playlistID,
-                        playlistURI: playlistURI,
-                        progress: state.progress_ms,
-                        track: state.item,
-                        state: state.state,
-                        newSocket: data.id
-                    });
-                },
-                (error) => {
-                    console.log(error);
+            player.getCurrentState().then((state) => {
+                if (host) {
+                    if (!state) {
+                        socket.emit('joinUs', {
+                            roomID: roomID,
+                            newSocket: data.id,
+                            trackList: trackList
+                        })
+                    } else {
+                        socket.emit('joinUs', {
+                            roomID: roomID,
+                            progress: state.position,
+                            track: state.track_window.current_track,
+                            newSocket: data.id,
+                            trackList: trackList,
+                            paused: state.paused
+                        });
+                    }
                 }
-            );
+            });
         }
     });
 
     socket.on('joinUs', (data) => {
-        s.followPlaylist(data.playlistID, {public: false}).then(
-            (res) => {
-                console.log('follow successful');
-                playlistID = data.playlistID;
-                playlistURI = data.playlistURI;
-                verified = true;
-                socket.emit('joined', data);
-            },
-            (error) => {
-                console.log(error);
-            }
-        );
-    });
-
-    socket.on('message', (msg) => {
-        console.log(msg);
+        trackList = data.trackList;
+        verified = true;
+        socket.emit('roomMessage', {user: user, type: 'joined', roomID: roomID});
+        if (editTableJoining(data.trackList)) {
+            socket.emit('joined', {state: data, user: user});
+        }
     });
 
     socket.on('joined', (data) => {
-        if (data.state === false) {
-            s.setVolume(0, {device_id: device});
-            s.play({context_uri: playlistURI, device_id: device, offset: {'uri': data.track.uri}});
-            setTimeout(() => {
-                s.seek(data.progress, {device_id: device});
-                s.setVolume(100, {device_id: device});
-            }, 1500);
-        } else {
-            console.log('man joined');
+        joiningModal.close();
+        if (data.state.paused !== undefined) {
+            if (!data.state.paused) {
+                player.setVolume(0).then(() => {
+                    s.play({device_id: device, uris: trackList, offset: {uri: data.state.track.uri}}).then(() => {
+                        s.seek(data.state.progress).then(() => {
+                            s.setVolume(100);
+                        });
+                    });
+                });
+            } else if (data.state.paused) {
+                player.setVolume(0).then(() => {
+                    s.play({device_id: device, uris: trackList, offset: {uri: data.state.track.uri}}).then(() => {
+                        s.seek(data.state.progress).then(() => {
+                            s.pause().then(() => {
+                                s.setVolume(100);
+                            });
+                        });
+                    });
+                });
+            }
         }
     });
 
@@ -2674,25 +2705,47 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         socket.disconnect();
         s.pause();
         player.disconnect();
+
     });
 
 
     socket.on('playPause', (data) => {
-        playToggle(data);
-        console.log(data);
+        if (data.paused !== undefined) {
+            player.togglePlay();
+        } else {
+            s.play({device_id: device, uris: trackList});
+        }
     });
 
     socket.on('rewind', (e) => {
-        s.skipToPrevious();
+        player.previousTrack();
     });
 
     socket.on('forward', (e) => {
-        s.skipToNext();
+        player.nextTrack();
     });
 
     socket.on('add', (data) => {
-        if (host) {
-            addSong(data);
+        trackList.push(data.uri);
+        editTable(data);
+        if (data.paused !== undefined) {
+            if (data.paused) {
+                player.setVolume(0);
+                s.play({device_id: device, uris: trackList, offset: {uri: data.track.uri}}).then(() => {
+                    s.seek(data.progress).then(() => {
+                        s.pause().then(() => {
+                            s.setVolume(100);
+                        });
+                    });
+                });
+            } else if (!data.paused) {
+                player.setVolume(0);
+                s.play({device_id: device, uris: trackList, offset: {uri: data.track.uri}}).then(() => {
+                    s.seek(data.progress).then(() => {
+                        player.setVolume(1);
+                    });
+                });
+            }
         }
     });
 
@@ -2701,64 +2754,48 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     });
 
     socket.on('changeSong', (uri) => {
-        console.log(uri);
-        s.play({context_uri: playlistURI, device_id: device, offset: {'uri': uri}});
+        s.play({uris: trackList, device_id: device, offset: {uri: uri}});
     });
 
     socket.on('newChat', (data) => {
         let messageBox = document.createElement('div');
         messageBox.className += 'messageBox';
+        let messageSender = document.createElement('span');
+        messageSender.classList.add('grey-text');
+        messageSender.innerHTML = data.user.display_name;
         let message = document.createElement('div');
         message.classList.add('message', 'grey', 'darken-4');
         let messageContent = document.createElement('span');
         messageContent.className += 'white-text';
         messageContent.innerHTML = data.newChat;
         message.appendChild(messageContent);
+        messageBox.appendChild(messageSender);
         messageBox.appendChild(message);
         chatMessages.insertBefore(messageBox, chatMessages.firstChild);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     });
 
-    async function getUserID() {
-        return await s.getMe().then(
-            function (data) {
-                return data.id;
-            },
-            function (error) {
-                console.log(error);
-            });
-    }
-
-    async function makePlaylist() {
-        let userID = await getUserID();
-        let dateObj = new Date();
-        let month = dateObj.getMonth() + 1;
-        let day = dateObj.getDate();
-        let year = dateObj.getFullYear();
-        let stamp = month + '/' + day + '/' + year;
-        return await s.createPlaylist(userID, {name: 'Listening Party ' + stamp, public: false, collaborative: true}).then(
-            function (data) {
-                console.log(data);
-                return data;
-            },
-            function (error) {
-                console.log(error);
-            });
-    }
+    socket.on('roomMessage', (data) => {
+        let messageBox = document.createElement('div');
+        messageBox.className += 'messageBox';
+        let messageSender = document.createElement('span');
+        messageSender.classList.add('grey-text');
+        if (data.type === 'joined') {
+            messageSender.innerHTML = data.user.display_name + ' joined';
+        } else if (data.type === 'left') {
+            console.log('wtf');
+            messageSender.innerHTML = data.user + ' left';
+        } else {
+            messageSender.innerHTML = data.user.display_name + ' added ' + data.song;
+        }
+        messageBox.appendChild(messageSender);
+        chatMessages.insertBefore(messageBox, chatMessages.firstChild);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
 
     async function initialize() {
         if (host) {
             verified = true;
-            makePlaylist().then(
-                (madePlaylist) => {
-                    playlistID = madePlaylist.id;
-                    playlistURI = madePlaylist.uri;
-                    console.log('id ' + playlistID);
-                    console.log('uri ' + playlistURI);
-                },
-                (error) => {
-                    console.log(error);
-                });
         } else {
             socket.emit('addToSession', {roomID: roomID, id: socket.id});
         }
@@ -2773,7 +2810,30 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             let album = track.getAttribute('data-album');
             let tag = e.target;
             if (tag.tagName === 'I') {
-                socket.emit('add', {roomID: roomID, uri: uri, song: song, artist: artist, album: album});
+                player.getCurrentState().then((state) => {
+                    if (!state) {
+                        socket.emit('add', {
+                            roomID: roomID,
+                            uri: uri,
+                            song: song,
+                            artist: artist,
+                            album: album
+                        });
+                    } else {
+                        socket.emit('add', {
+                            roomID: roomID,
+                            uri: uri,
+                            song: song,
+                            artist: artist,
+                            album: album,
+                            paused: state.paused,
+                            progress: state.position,
+                            track: state.track_window.current_track
+                        });
+                    }
+                });
+                document.getElementById('search').value = '';
+                socket.emit('roomMessage', { roomID: roomID, song: song, user: user, type: 'addSong'});
             }
         });
     }
@@ -2793,20 +2853,23 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     });
 
     document.getElementById('toggle').addEventListener('click', e => {
-        getState().then(
-            (state) => {
-                console.log(state);
+        console.log(trackList);
+        player.getCurrentState().then((state) => {
+            if (!state) {
                 socket.emit('copyMe', {
                     roomID: roomID,
                     target: 'toggle',
-                    progress: state.progress_ms,
-                    track: state.item,
-                    state: state.is_playing,
                 });
-            },
-            (error) => {
-                console.log(error);
-            });
+            } else {
+                socket.emit('copyMe', {
+                    roomID: roomID,
+                    target: 'toggle',
+                    progress: state.position,
+                    track: state.track_window.current_track,
+                    paused: state.paused
+                });
+            }
+        });
     });
 
     document.getElementById('playlistItems').addEventListener('click', e => {
@@ -2819,34 +2882,20 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     let chatMessages = document.getElementById('chatMessages');
     document.getElementById('messageSend').addEventListener('click', e => {
         let newChat = document.getElementById('messageInput').value;
-        socket.emit('newChat', {newChat: newChat, roomID: roomID});
+        socket.emit('newChat', {newChat: newChat, roomID: roomID, user: user});
+        document.getElementById('messageInput').value = '';
     });
 
-    async function getState() {
-        return await s.getMyCurrentPlaybackState().then(
-            function (data) {
-                return data;
-            },
-            function (error) {
-                console.log(error);
-            });
-    }
-
-
-    function addSong(data) {
-        s.addTracksToPlaylist(playlistID, [data.uri]).then(
-            function (data) {
-                console.log('added ' + data);
-            },
-            function (error) {
-                console.log(error);
-            });
-        socket.emit('editTable', data);
-    }
+    document.getElementById('messageInput').addEventListener('keypress', e => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('messageSend').click();
+        }
+    });
 
     function editTable(data) {
-        let playlist = document.getElementById('playlistItems');
-        let newTrack = playlist.insertRow();
+        let playlistBody = document.getElementById('playlistBody');
+        let newTrack = playlistBody.insertRow();
         newTrack.setAttribute('data-uri', data.uri);
         newTrack.setAttribute('href', '#');
         let songCell = newTrack.insertCell(0);
@@ -2857,21 +2906,27 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         albumCell.appendChild(document.createTextNode(data.album));
     }
 
-    function playToggle(data) {
-        console.log(data);
-        if (data.state === undefined) {
-            s.play({context_uri: playlistURI, device_id: device});
-                //'offset': {'uri': data.track.uri, 'position_ms': data.progress}});
-        } else if (data.state === true) {
-            s.pause();
-        } else if (data.state === false) {
-            s.setVolume(0, {device_id: device});
-            s.play({context_uri: playlistURI, device_id: device, offset: {'uri': data.track.uri}});
-            setTimeout(() => {
-                s.seek(data.progress, {device_id: device});
-                s.setVolume(100, {device_id: device});
-            }, 1500);
-        }
+    function editTableJoining(data) {
+        let playlistBody = document.getElementById('playlistBody');
+        let trackIDs = [];
+        data.forEach((element) => {
+            let id = element.slice(14);
+            trackIDs.push(id);
+        });
+        s.getTracks(trackIDs).then((trackList) => {
+            trackList.tracks.forEach((element) => {
+                let newTrack = playlistBody.insertRow();
+                newTrack.setAttribute('data-uri', element.uri);
+                newTrack.setAttribute('href', '#');
+                let songCell = newTrack.insertCell(0);
+                let artistCell = newTrack.insertCell(1);
+                let albumCell = newTrack.insertCell(2);
+                songCell.appendChild(document.createTextNode(element.name));
+                artistCell.appendChild(document.createTextNode(element.artists[0].name));
+                albumCell.appendChild(document.createTextNode(element.album.name));
+            });
+        });
+        return true;
     }
 
 };

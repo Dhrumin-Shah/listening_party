@@ -19,18 +19,13 @@ io.on('connection', function(socket){
         console.log(data.roomID);
         socket.join(data.roomID);
         if (rooms.has(data.roomID)) {
-            rooms.get(data.roomID).push(socket.id);
+            rooms.get(data.roomID).push([socket.id, data.user.display_name, data.host]);
         }
-
-        socket.broadcast.to(data.roomID).emit('message', 'another person joined');
+        socket.emit('roomEntered', data);
     });
 
     socket.on('addToSession', (data) => {
         socket.broadcast.to(data.roomID).emit('joinUsRequest', data);
-    });
-
-    socket.on('joinUsRequest', (data) => {
-        io.to(data).emit('joinUs');
     });
 
     socket.on('joinUs', (data) => {
@@ -38,7 +33,7 @@ io.on('connection', function(socket){
     });
 
     socket.on('joined', (data) => {
-        io.to(data.roomID).emit('joined', data);
+        io.to(data.state.roomID).emit('joined', data);
     });
 
     socket.on('copyMe', (data) => {
@@ -64,8 +59,11 @@ io.on('connection', function(socket){
     });
 
     socket.on('newChat', (data) => {
-        console.log('new chat');
         io.to(data.roomID).emit('newChat', data);
+    });
+
+    socket.on('roomMessage', (data) => {
+        io.to(data.roomID).emit('roomMessage', data);
     });
 
     socket.on('disconnecting', (stuff) => {
@@ -76,13 +74,16 @@ io.on('connection', function(socket){
                 socketRooms.forEach((roomID) => {
                     if (rooms.has(roomID)) {
                         let roomSockets = rooms.get(roomID);
-                        if (roomSockets[0] === socket.id) {
-                            io.to(roomID).emit('hostLeft');
-                            rooms.delete(roomID);
-                            /*for (let i = 1; i < roomSockets.length; i++) {
-                                io.to()
-                            }*/
-                        }
+                        roomSockets.forEach(element => {
+                            if (element[0] === socket.id) {
+                                if (element[2]) {
+                                    io.to(roomID).emit('hostLeft');
+                                    rooms.delete(roomID);
+                                } else {
+                                    io.to(roomID).emit('roomMessage', {user: element[1], type: 'left'});
+                                }
+                            }
+                        });
                     }
                 });
             }
