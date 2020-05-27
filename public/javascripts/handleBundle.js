@@ -55,7 +55,7 @@ const socket = io();
 const randomString = require('random-string');
 
 var elems = document.querySelectorAll('.modal');
-var instances = M.Modal.init(elems, options);
+var instances = M.Modal.init(elems);
 
 let emptyIDModal = instances[0];
 
