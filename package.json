@@ -14,7 +14,7 @@
     "fetch": "^1.1.0",
     "fetch-json": "^2.2.7",
     "morgan": "~1.9.1",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.7",
     "query-string": "^6.12.1",
     "random-string": "^0.2.0",
     "request": "^2.88.2",
