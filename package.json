@@ -10,7 +10,7 @@
     "bufferutil": "^4.0.1",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
-    "express": "~4.16.1",
+    "express": "~4.17.3",
     "fetch": "^1.1.0",
     "fetch-json": "^2.2.7",
     "morgan": "~1.9.1",
